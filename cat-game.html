@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Color Match Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            color: #C71585;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 1.5rem;
+            color: #FF69B4;
+        }
+
+        .score-item {
+            background: #f0f0f0;
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .circles-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .color-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 4px solid #333;
+            position: relative;
+        }
+
+        .color-circle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .color-circle.selected {
+            transform: scale(1.15);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .color-circle .cat-in-circle {
+            font-size: 2.5rem;
+            position: absolute;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            z-index: 2;
+        }
+
+        .color-circle .color-label {
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .color-circle.yellow .color-label {
+            color: #CCCCCC;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            z-index: 1;
+        }
+
+        .red { background-color: #FF0000; }
+        .blue { background-color: #0000FF; }
+        .yellow { background-color: #FFFF00; }
+        .green { background-color: #00FF00; }
+        .pink { background-color: #FF69B4; }
+
+        .cat-area {
+            width: 100%;
+            height: 120px;
+            position: relative;
+            margin: 5px 0;
+            background: linear-gradient(to bottom, #f8f8f8, #e8e8e8);
+            border-radius: 20px;
+            border: 3px solid #ccc;
+        }
+
+        .cat {
+            position: absolute;
+            bottom: 10px;
+            font-size: 3rem;
+            cursor: move;
+            transition: left 0.3s ease, bottom 0.5s ease, background-color 0.3s ease;
+            user-select: none;
+            filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3));
+            padding: 12px;
+            border-radius: 50%;
+            background-color: #FF0000;
+            border: 4px solid #333;
+        }
+
+        .cat.dropping {
+            transition: left 0.3s ease, bottom 0.5s ease-in;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .button-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .control-btn {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: linear-gradient(to bottom, #4CAF50, #45a049);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.3);
+        }
+
+        .control-btn:active {
+            transform: translateY(0);
+        }
+
+        .control-btn.left { background: linear-gradient(to bottom, #2196F3, #1976D2); }
+        .control-btn.right { background: linear-gradient(to bottom, #2196F3, #1976D2); }
+        .control-btn.drop { background: linear-gradient(to bottom, #FF9800, #F57C00); }
+        .control-btn.new-game { background: linear-gradient(to bottom, #9C27B0, #7B1FA2); }
+
+        .instructions {
+            text-align: center;
+            color: #C71585;
+            font-size: 1rem;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            max-width: 600px;
+        }
+
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .splash-screen.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .splash-content {
+            background: white;
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            animation: popIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .splash-content h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .splash-content.success h2 {
+            color: #4CAF50;
+        }
+
+        .splash-content.error h2 {
+            color: #f44336;
+        }
+
+        .splash-content p {
+            font-size: 1.5rem;
+            color: #666;
+        }
+
+        .splash-emoji {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .color-circle {
+                width: 70px;
+                height: 70px;
+            }
+
+            .cat {
+                font-size: 3rem;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .score-board {
+                font-size: 1.2rem;
+            }
+
+            .control-btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>🐱 Cat Color Match Game 🐱</h1>
+            <div class="score-board">
+                <div class="score-item">Score: <span id="score">0</span></div>
+                <div class="score-item">Attempts: <span id="attempts">0</span></div>
+            </div>
+        </div>
+
+        <div class="circles-container" id="circlesContainer">
+            <!-- Circles will be generated by JavaScript -->
+        </div>
+
+        <div class="cat-area" id="catArea">
+            <div class="cat" id="cat">🐱</div>
+        </div>
+
+        <div class="controls">
+            <div class="button-controls">
+                <button class="control-btn left" id="leftBtn">⬅️ Left</button>
+                <button class="control-btn drop" id="dropBtn">⬆️ Up</button>
+                <button class="control-btn right" id="rightBtn">Right ➡️</button>
+            </div>
+            <button class="control-btn new-game" id="newGameBtn">🔄 New Game</button>
+        </div>
+
+        <div class="instructions">
+            <strong>How to Play:</strong> Use left/right arrows or buttons to move the cat under the matching color circle. Press up arrow or drop button to match! 🎯
+        </div>
+    </div>
+
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-content" id="splashContent">
+            <div class="splash-emoji" id="splashEmoji">🎉</div>
+            <h2 id="splashTitle">Great Job!</h2>
+            <p id="splashMessage">You got the right answer!</p>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const colors = ['red', 'blue', 'yellow', 'green', 'pink'];
+        const colorMap = {
+            red: '#FF0000',
+            blue: '#0000FF',
+            yellow: '#FFFF00',
+            green: '#00FF00',
+            pink: '#FF69B4'
+        };
+
+        let currentCatColor = '';
+        let catPosition = 2; // Start at middle (index 2)
+        let score = 0;
+        let attempts = 0;
+        let isDropping = false;
+
+        // DOM Elements
+        const cat = document.getElementById('cat');
+        const catArea = document.getElementById('catArea');
+        let circles = [];
+        const scoreDisplay = document.getElementById('score');
+        const attemptsDisplay = document.getElementById('attempts');
+        const splashScreen = document.getElementById('splashScreen');
+        const splashContent = document.getElementById('splashContent');
+        const splashTitle = document.getElementById('splashTitle');
+        const splashMessage = document.getElementById('splashMessage');
+        const splashEmoji = document.getElementById('splashEmoji');
+
+        // Audio Context for sound effects
+        let audioContext;
+
+        function initAudio() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // Generate cat walking/footstep sound using Web Audio API
+        function playPurrSound() {
+            if (!audioContext) initAudio();
+            
+            // Create a soft, padded footstep sound
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+            
+            oscillator.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Cat footsteps - soft low frequency with filter
+            oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(80, audioContext.currentTime + 0.1);
+            oscillator.type = 'triangle';
+            
+            // Low-pass filter for softer sound
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(800, audioContext.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.15);
+            
+            // Soft attack and decay for footstep
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.25, audioContext.currentTime + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.15);
+        }
+
+        // Generate meow sound using Web Audio API
+        function playMeowSound() {
+            if (!audioContext) initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Meow sound - sliding frequency
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.2);
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        // Generate wrong answer sound
+        function playWrongSound() {
+            if (!audioContext) initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.2);
+            oscillator.type = 'sawtooth';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        // Shuffle array function
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Generate circles with shuffled colors
+        function generateCircles() {
+            const container = document.getElementById('circlesContainer');
+            container.innerHTML = '';
+            
+            const shuffledColors = shuffleArray([...colors]);
+            const circleElements = [];
+            
+            shuffledColors.forEach((color, index) => {
+                const circle = document.createElement('div');
+                circle.className = `color-circle ${color}`;
+                circle.dataset.color = color;
+                circle.dataset.index = index;
+                
+                const catInCircle = document.createElement('span');
+                catInCircle.className = 'cat-in-circle';
+                
+                const colorLabel = document.createElement('span');
+                colorLabel.className = 'color-label';
+                colorLabel.textContent = color.charAt(0).toUpperCase() + color.slice(1);
+                
+                circle.appendChild(catInCircle);
+                circle.appendChild(colorLabel);
+                container.appendChild(circle);
+                circleElements.push(circle);
+            });
+            
+            return circleElements;
+        }
+
+        // Initialize game
+        function initGame() {
+            // Generate circles with shuffled colors
+            circles = Array.from(generateCircles());
+            
+            currentCatColor = colors[Math.floor(Math.random() * colors.length)];
+            catPosition = 2;
+            score = 0;
+            attempts = 0;
+            isDropping = false;
+            
+            updateCatColor();
+            updateScore();
+            
+            // Clear any cats in circles
+            circles.forEach(circle => {
+                circle.querySelector('.cat-in-circle').textContent = '';
+            });
+            
+            // Re-attach click event listeners to new circles
+            attachCircleClickListeners();
+            
+            // Update position after DOM is updated
+            setTimeout(updateCatPosition, 50);
+        }
+
+        // Attach click listeners to circles
+        function attachCircleClickListeners() {
+            circles.forEach((circle, index) => {
+                circle.addEventListener('click', () => {
+                    if (!isDropping) {
+                        catPosition = index;
+                        updateCatPosition();
+                        playPurrSound();
+                        
+                        // Highlight selected circle
+                        circles.forEach(c => c.classList.remove('selected'));
+                        circle.classList.add('selected');
+                    }
+                });
+            });
+        }
+
+        // Update cat color
+        function updateCatColor() {
+            const targetColor = colorMap[currentCatColor];
+            cat.style.backgroundColor = targetColor;
+            cat.style.color = 'white';
+            cat.style.filter = `drop-shadow(2px 2px 3px rgba(0,0,0,0.3))`;
+        }
+
+        // Update cat position
+        function updateCatPosition() {
+            if (circles.length === 0 || catPosition >= circles.length) return;
+            
+            const targetCircle = circles[catPosition];
+            const circleRect = targetCircle.getBoundingClientRect();
+            const areaRect = catArea.getBoundingClientRect();
+            
+            // Calculate position relative to cat area
+            const circleCenterX = circleRect.left + circleRect.width / 2;
+            const areaLeft = areaRect.left;
+            const position = circleCenterX - areaLeft - 25; // 25 is half cat size (approx)
+            
+            cat.style.left = position + 'px';
+            cat.style.bottom = '10px';
+        }
+
+        // Update score display
+        function updateScore() {
+            scoreDisplay.textContent = score;
+            attemptsDisplay.textContent = attempts;
+        }
+
+        // Move cat left
+        function moveLeft() {
+            if (catPosition > 0 && !isDropping) {
+                catPosition--;
+                updateCatPosition();
+                playPurrSound();
+            }
+        }
+
+        // Move cat right
+        function moveRight() {
+            if (catPosition < 4 && !isDropping) {
+                catPosition++;
+                updateCatPosition();
+                playPurrSound();
+            }
+        }
+
+        // Drop cat and check match
+        function dropCat() {
+            if (isDropping) return;
+            
+            isDropping = true;
+            attempts++;
+            updateScore();
+            
+            cat.classList.add('dropping');
+            cat.style.bottom = '120px';
+            
+            setTimeout(() => {
+                const circle = circles[catPosition];
+                const selectedColor = circle.dataset.color;
+                
+                if (selectedColor === currentCatColor) {
+                    // Correct match!
+                    handleCorrectMatch(circle);
+                } else {
+                    // Wrong match
+                    handleWrongMatch();
+                }
+                
+                // Reset cat position
+                setTimeout(() => {
+                    cat.classList.remove('dropping');
+                    cat.style.bottom = '10px';
+                    isDropping = false;
+                }, 500);
+            }, 500);
+        }
+
+        // Handle correct match
+        function handleCorrectMatch(circle) {
+            score++;
+            updateScore();
+            playMeowSound();
+            
+            // Add cat to circle
+            const catInCircle = circle.querySelector('.cat-in-circle');
+            catInCircle.textContent = '🐱';
+            
+            // Show success splash
+            showSplash(true);
+            
+            // Create new cat with different color
+            setTimeout(() => {
+                let newColor;
+                do {
+                    newColor = colors[Math.floor(Math.random() * colors.length)];
+                } while (newColor === currentCatColor);
+                
+                currentCatColor = newColor;
+                updateCatColor();
+            }, 1500);
+        }
+
+        // Handle wrong match
+        function handleWrongMatch() {
+            playWrongSound();
+            showSplash(false);
+        }
+
+        // Show splash screen
+        function showSplash(isSuccess) {
+            splashContent.className = 'splash-content ' + (isSuccess ? 'success' : 'error');
+            
+            if (isSuccess) {
+                splashEmoji.textContent = '🎉';
+                splashTitle.textContent = 'Great Job!';
+                splashMessage.textContent = 'You got the right answer!';
+            } else {
+                splashEmoji.textContent = '😿';
+                splashTitle.textContent = 'Try Again!';
+                splashMessage.textContent = 'The colors don\'t match.';
+            }
+            
+            splashScreen.classList.add('active');
+            
+            setTimeout(() => {
+                splashScreen.classList.remove('active');
+            }, 1500);
+        }
+
+        // Event Listeners
+        document.getElementById('leftBtn').addEventListener('click', moveLeft);
+        document.getElementById('rightBtn').addEventListener('click', moveRight);
+        document.getElementById('dropBtn').addEventListener('click', dropCat);
+        document.getElementById('newGameBtn').addEventListener('click', initGame);
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    moveLeft();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    moveRight();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    dropCat();
+                    break;
+            }
+        });
+
+        // Click on circles to select is now handled in attachCircleClickListeners()
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            setTimeout(updateCatPosition, 50);
+        });
+
+        // Initialize game on load
+        window.addEventListener('load', () => {
+            initGame();
+            attachCircleClickListeners();
+            // Initialize audio context on first user interaction
+            document.body.addEventListener('click', () => {
+                if (!audioContext) initAudio();
+            }, { once: true });
+        });
+    </script>
+</body>
+</html>
