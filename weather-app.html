@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .weather-info {
+            display: none;
+            text-align: center;
+        }
+
+        .weather-info.active {
+            display: block;
+        }
+
+        .location {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .temperature {
+            font-size: 64px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 20px 0;
+        }
+
+        .description {
+            font-size: 20px;
+            color: #666;
+            text-transform: capitalize;
+            margin-bottom: 20px;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .detail-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .error {
+            display: none;
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #666;
+            margin-top: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .api-note {
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            margin-top: 20px;
+            line-height: 1.5;
+        }
+
+        .hourly-forecast {
+            margin-top: 30px;
+        }
+
+        .hourly-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        .weather-alerts {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .weather-alerts.active {
+            display: block;
+        }
+
+        .alert-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .alert-title {
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-description {
+            font-size: 14px;
+            color: #856404;
+            line-height: 1.4;
+        }
+
+        .special-conditions {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .special-conditions.active {
+            display: block;
+        }
+
+        .condition-tag {
+            display: inline-block;
+            background: #e7f3ff;
+            color: #0066cc;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin: 3px;
+            font-weight: 500;
+        }
+
+        .daily-forecast {
+            margin-top: 30px;
+        }
+
+        .daily-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .temp-range {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .high-low-temp {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 10px;
+            display: inline-flex;
+            gap: 20px;
+        }
+
+        .high-low-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .high-low-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .high-temp {
+            color: #d32f2f;
+        }
+
+        .low-temp {
+            color: #1976d2;
+        }
+
+        .precip-chance {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        .enhanced-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .wind-compass {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .compass-circle {
+            width: 80px;
+            height: 80px;
+            border: 2px solid #667eea;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            position: relative;
+        }
+
+        .compass-arrow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 35px;
+            background: linear-gradient(to top, #d32f2f, #667eea);
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%);
+            border-radius: 2px;
+        }
+
+        .compass-n {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            color: #667eea;
+            font-size: 12px;
+        }
+
+        .compass-s {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            color: #667eea;
+            font-size: 12px;
+        }
+
+        .compass-e {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            color: #667eea;
+            font-size: 12px;
+        }
+
+        .compass-w {
+            position: absolute;
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            color: #667eea;
+            font-size: 12px;
+        }
+
+        .humidity-gauge {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .gauge-container {
+            width: 100px;
+            height: 50px;
+            margin: 0 auto 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gauge-bg {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: conic-gradient(from 180deg, #e3f2fd 0deg, #1976d2 180deg, transparent 180deg);
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .gauge-fill {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: conic-gradient(from 180deg, #1976d2 0deg, #1976d2 0deg, transparent 0deg);
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: all 0.5s ease;
+        }
+
+        .gauge-center {
+            width: 60px;
+            height: 60px;
+            background: #f8f9fa;
+            border-radius: 50%;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #1976d2;
+        }
+
+        .weather-map-section {
+            margin-top: 30px;
+        }
+
+        .map-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .map-container {
+            height: 300px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .map-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .map-controls button {
+            padding: 8px 15px;
+            font-size: 12px;
+        }
+
+        .precip-accumulation {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Weather App</h1>
+        
+        <div class="search-box">
+            <input type="text" id="zipcode" placeholder="Enter zipcode (e.g., 90210)" maxlength="5">
+            <button onclick="getWeather()">Get Weather</button>
+        </div>
+
+        <div class="loading" id="loading">
+            Loading weather data...
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="weather-info" id="weatherInfo">
+            <div class="location" id="location"></div>
+            <div class="temperature" id="temperature"></div>
+            <div class="description" id="description"></div>
+            
+            <div class="details">
+                <div class="detail-item">
+                    <div class="detail-label">Feels Like</div>
+                    <div class="detail-value" id="feelsLike"></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Humidity</div>
+                    <div class="detail-value" id="humidity"></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Wind Speed</div>
+                    <div class="detail-value" id="windSpeed"></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Pressure</div>
+                    <div class="detail-value" id="pressure"></div>
+                </div>
+            </div>
+
+            <div class="temp-range">
+                <div class="high-low-temp">
+                    <div>
+                        <div class="high-low-label">Today's High</div>
+                        <div class="high-low-value high-temp" id="todayHigh">--°F</div>
+                    </div>
+                    <div>
+                        <div class="high-low-label">Today's Low</div>
+                        <div class="high-low-value low-temp" id="todayLow">--°F</div>
+                    </div>
+                </div>
+                <div class="precip-chance" id="currentPrecip">Precipitation: --%</div>
+            </div>
+
+            <div class="special-conditions" id="specialConditions">
+                <div class="detail-label" style="text-align: center; margin-bottom: 10px;">Special Conditions</div>
+                <div id="conditionsContainer"></div>
+            </div>
+
+            <div class="enhanced-details">
+                <div class="wind-compass">
+                    <div class="detail-label">Wind Direction</div>
+                    <div class="compass-circle">
+                        <div class="compass-n">N</div>
+                        <div class="compass-s">S</div>
+                        <div class="compass-e">E</div>
+                        <div class="compass-w">W</div>
+                        <div class="compass-arrow" id="windArrow"></div>
+                    </div>
+                    <div class="detail-value" id="windDirection">--°</div>
+                </div>
+                <div class="humidity-gauge">
+                    <div class="detail-label">Humidity Level</div>
+                    <div class="gauge-container">
+                        <div class="gauge-bg"></div>
+                        <div class="gauge-fill" id="humidityGauge"></div>
+                        <div class="gauge-center" id="humidityValue">--%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hourly-forecast" id="hourlyForecast">
+                <div class="hourly-title">Hourly Forecast</div>
+                <div class="chart-container">
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="weather-alerts" id="weatherAlerts">
+                <div class="hourly-title">Weather Alerts</div>
+                <div id="alertsContainer"></div>
+            </div>
+
+            <div class="daily-forecast" id="dailyForecast">
+                <div class="daily-title">5-Day Forecast</div>
+                <div class="chart-container">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="weather-map-section" id="weatherMapSection">
+                <div class="map-title">Weather Map</div>
+                <div class="map-container">
+                    <div id="map" style="height: 100%; width: 100%;"></div>
+                </div>
+                <div class="map-controls">
+                    <button onclick="changeMapLayer('clouds_new')">Clouds</button>
+                    <button onclick="changeMapLayer('precipitation_new')">Precipitation</button>
+                    <button onclick="changeMapLayer('temp_new')">Temperature</button>
+                    <button onclick="changeMapLayer('wind_new')">Wind</button>
+                    <button onclick="changeMapLayer('pressure_new')">Pressure</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="api-note">
+            Note: This app uses OpenWeatherMap API. Get your free API key at <a href="https://openweathermap.org/api" target="_blank">openweathermap.org</a>
+        </div>
+    </div>
+
+    <script>
+        // Replace with your OpenWeatherMap API key
+        const API_KEY = '835de810ff4a3cf6a24449fede80cf9d';
+        const BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
+        const FORECAST_URL = 'https://api.openweathermap.org/data/2.5/forecast';
+
+        let hourlyChart = null;
+        let dailyChart = null;
+        let map = null;
+        let weatherLayer = null;
+
+        async function getWeather() {
+            const zipcode = document.getElementById('zipcode').value.trim();
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const weatherInfo = document.getElementById('weatherInfo');
+
+            // Reset UI
+            error.classList.remove('active');
+            weatherInfo.classList.remove('active');
+            document.getElementById('hourlyForecast').classList.remove('active');
+            document.getElementById('weatherAlerts').classList.remove('active');
+            document.getElementById('specialConditions').classList.remove('active');
+            document.getElementById('dailyForecast').classList.remove('active');
+            document.getElementById('weatherMapSection').classList.remove('active');
+            loading.classList.add('active');
+
+            // Validate zipcode
+            if (!zipcode || !/^\d{5}$/.test(zipcode)) {
+                loading.classList.remove('active');
+                error.textContent = 'Please enter a valid 5-digit zipcode';
+                error.classList.add('active');
+                return;
+            }
+
+            // Check if API key is set
+            if (API_KEY === 'YOUR_API_KEY_HERE') {
+                loading.classList.remove('active');
+                error.textContent = 'Please set your OpenWeatherMap API key in the JavaScript code';
+                error.classList.add('active');
+                return;
+            }
+
+            try {
+                // Fetch current weather and forecast in parallel
+                const [weatherResponse, forecastResponse] = await Promise.all([
+                    fetch(`${BASE_URL}?zip=${zipcode},us&appid=${API_KEY}&units=imperial`),
+                    fetch(`${FORECAST_URL}?zip=${zipcode},us&appid=${API_KEY}&units=imperial`)
+                ]);
+
+                if (!weatherResponse.ok) {
+                    throw new Error('Weather data not found for this zipcode');
+                }
+
+                if (!forecastResponse.ok) {
+                    throw new Error('Forecast data not found for this zipcode');
+                }
+
+                const weatherData = await weatherResponse.json();
+                const forecastData = await forecastResponse.json();
+
+                displayWeather(weatherData, forecastData);
+                displayHourlyForecast(forecastData);
+                displaySpecialConditions(weatherData);
+                displayWeatherAlerts(forecastData);
+                displayDailyForecast(forecastData);
+                initWeatherMap(weatherData.coord.lat, weatherData.coord.lon);
+            } catch (err) {
+                loading.classList.remove('active');
+                error.textContent = err.message || 'Failed to fetch weather data';
+                error.classList.add('active');
+            }
+        }
+
+        function displayWeather(data, forecastData) {
+            const loading = document.getElementById('loading');
+            const weatherInfo = document.getElementById('weatherInfo');
+
+            loading.classList.remove('active');
+            weatherInfo.classList.add('active');
+
+            document.getElementById('location').textContent = `${data.name}, ${data.sys.country}`;
+            document.getElementById('temperature').textContent = `${Math.round(data.main.temp)}°F`;
+            document.getElementById('description').textContent = data.weather[0].description;
+            document.getElementById('feelsLike').textContent = `${Math.round(data.main.feels_like)}°F`;
+            document.getElementById('humidity').textContent = `${data.main.humidity}%`;
+            document.getElementById('windSpeed').textContent = `${data.wind.speed} mph`;
+            document.getElementById('pressure').textContent = `${data.main.pressure} hPa`;
+
+            // Update wind compass
+            const windDirection = data.wind.deg || 0;
+            document.getElementById('windDirection').textContent = `${windDirection}°`;
+            document.getElementById('windArrow').style.transform = `translate(-50%, -100%) rotate(${windDirection}deg)`;
+
+            // Update humidity gauge
+            const humidity = data.main.humidity || 0;
+            document.getElementById('humidityValue').textContent = `${humidity}%`;
+            const humidityDeg = (humidity / 100) * 180;
+            document.getElementById('humidityGauge').style.background = `conic-gradient(from 180deg, #1976d2 0deg, #1976d2 ${humidityDeg}deg, transparent ${humidityDeg}deg)`;
+
+            // Get today's high/low from forecast data
+            const today = new Date().toDateString();
+            const todayForecast = forecastData.list.filter(period => {
+                const periodDate = new Date(period.dt * 1000);
+                return periodDate.toDateString() === today;
+            });
+
+            if (todayForecast.length > 0) {
+                const temps = todayForecast.map(p => p.main.temp);
+                const todayHigh = Math.round(Math.max(...temps));
+                const todayLow = Math.round(Math.min(...temps));
+                
+                document.getElementById('todayHigh').textContent = `${todayHigh}°F`;
+                document.getElementById('todayLow').textContent = `${todayLow}°F`;
+
+                // Calculate precipitation accumulation for today
+                let totalPrecip = 0;
+                todayForecast.forEach(period => {
+                    if (period.rain && period.rain['3h']) {
+                        totalPrecip += period.rain['3h'];
+                    }
+                    if (period.snow && period.snow['3h']) {
+                        totalPrecip += period.snow['3h'];
+                    }
+                });
+                
+                const precipChance = todayForecast[0].pop ? Math.round(todayForecast[0].pop * 100) : 0;
+                if (totalPrecip > 0) {
+                    document.getElementById('currentPrecip').textContent = `Precip: ${precipChance}% (${totalPrecip.toFixed(2)}mm)`;
+                } else {
+                    document.getElementById('currentPrecip').textContent = `Precip: ${precipChance}%`;
+                }
+            } else {
+                // Use current weather data if no forecast data for today
+                document.getElementById('todayHigh').textContent = `${Math.round(data.main.temp_max || data.main.temp)}°F`;
+                document.getElementById('todayLow').textContent = `${Math.round(data.main.temp_min || data.main.temp)}°F`;
+                document.getElementById('currentPrecip').textContent = 'Precip: 0%';
+            }
+        }
+
+        function displayHourlyForecast(forecastData) {
+            const hourlyForecast = document.getElementById('hourlyForecast');
+            
+            // Destroy existing chart if it exists
+            if (hourlyChart) {
+                hourlyChart.destroy();
+            }
+            
+            // Get next 8 hours (3-hour intervals from API)
+            const hourlyData = forecastData.list.slice(0, 8);
+            
+            const labels = [];
+            const temperatures = [];
+            const precipitation = [];
+            const precipAccumulation = [];
+            const weatherIcons = [];
+            let runningPrecipTotal = 0;
+            
+            hourlyData.forEach(hour => {
+                const date = new Date(hour.dt * 1000);
+                const time = date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+                const temp = Math.round(hour.main.temp);
+                const pop = Math.round((hour.pop || 0) * 100);
+                const icon = getWeatherIcon(hour.weather[0].id);
+                
+                // Calculate precipitation accumulation
+                let hourPrecip = 0;
+                if (hour.rain && hour.rain['3h']) {
+                    hourPrecip += hour.rain['3h'];
+                }
+                if (hour.snow && hour.snow['3h']) {
+                    hourPrecip += hour.snow['3h'];
+                }
+                runningPrecipTotal += hourPrecip;
+                
+                labels.push(time);
+                temperatures.push(temp);
+                precipitation.push(pop);
+                precipAccumulation.push(runningPrecipTotal.toFixed(2));
+                weatherIcons.push(icon);
+            });
+
+            // Calculate trend line for temperature
+            const trendLine = calculateTrendLine(temperatures);
+
+            const ctx = document.getElementById('hourlyChart').getContext('2d');
+            
+            hourlyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Temperature (°F)',
+                            data: temperatures,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Temperature Trend',
+                            data: trendLine,
+                            borderColor: '#ff9800',
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Precipitation (%)',
+                            data: precipitation,
+                            borderColor: '#1976d2',
+                            backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'Precip Accumulation (mm)',
+                            data: precipAccumulation,
+                            borderColor: '#4caf50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            fill: false,
+                            tension: 0.4,
+                            yAxisID: 'y2'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterBody: function(context) {
+                                    const index = context[0].dataIndex;
+                                    return `Weather: ${weatherIcons[index]}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Temperature (°F)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Precipitation (%)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            min: 0,
+                            max: 100
+                        },
+                        y2: {
+                            type: 'linear',
+                            display: false,
+                            position: 'right',
+                            min: 0
+                        }
+                    }
+                }
+            });
+
+            hourlyForecast.classList.add('active');
+        }
+
+        function calculateTrendLine(data) {
+            const n = data.length;
+            if (n < 2) return data;
+            
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            
+            for (let i = 0; i < n; i++) {
+                sumX += i;
+                sumY += data[i];
+                sumXY += i * data[i];
+                sumX2 += i * i;
+            }
+            
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            return data.map((_, i) => slope * i + intercept);
+        }
+
+        function displaySpecialConditions(weatherData) {
+            const specialConditions = document.getElementById('specialConditions');
+            const conditionsContainer = document.getElementById('conditionsContainer');
+            
+            conditionsContainer.innerHTML = '';
+            const conditions = [];
+
+            // Check for various special conditions
+            if (weatherData.main.temp > 90) conditions.push('Extreme Heat');
+            if (weatherData.main.temp < 32) conditions.push('Freezing');
+            if (weatherData.main.humidity > 80) conditions.push('High Humidity');
+            if (weatherData.main.humidity < 30) conditions.push('Low Humidity');
+            if (weatherData.wind.speed > 20) conditions.push('High Winds');
+            if (weatherData.visibility < 1000) conditions.push('Low Visibility');
+            
+            // Check weather conditions
+            const weatherId = weatherData.weather[0].id;
+            if (weatherId >= 200 && weatherId < 300) conditions.push('Thunderstorm');
+            if (weatherId >= 300 && weatherId < 400) conditions.push('Drizzle');
+            if (weatherId >= 500 && weatherId < 600) conditions.push('Rain');
+            if (weatherId >= 600 && weatherId < 700) conditions.push('Snow');
+            if (weatherId >= 700 && weatherId < 800) conditions.push('Atmospheric');
+            if (weatherId === 800) conditions.push('Clear Sky');
+            if (weatherId > 800) conditions.push('Cloudy');
+
+            if (conditions.length > 0) {
+                conditions.forEach(condition => {
+                    const tag = document.createElement('span');
+                    tag.className = 'condition-tag';
+                    tag.textContent = condition;
+                    conditionsContainer.appendChild(tag);
+                });
+                specialConditions.classList.add('active');
+            }
+        }
+
+        function displayWeatherAlerts(forecastData) {
+            const weatherAlerts = document.getElementById('weatherAlerts');
+            const alertsContainer = document.getElementById('alertsContainer');
+            
+            alertsContainer.innerHTML = '';
+            
+            // Check for potential weather alerts based on forecast
+            const alerts = [];
+            
+            forecastData.list.forEach(period => {
+                const weatherId = period.weather[0].id;
+                const windSpeed = period.wind.speed;
+                const temp = period.main.temp;
+                
+                if (weatherId >= 200 && weatherId < 300 && !alerts.includes('Severe Thunderstorm Watch')) {
+                    alerts.push('Severe Thunderstorm Watch');
+                }
+                if (weatherId >= 600 && weatherId < 700 && !alerts.includes('Winter Weather Advisory')) {
+                    alerts.push('Winter Weather Advisory');
+                }
+                if (windSpeed > 25 && !alerts.includes('High Wind Advisory')) {
+                    alerts.push('High Wind Advisory');
+                }
+                if (temp > 95 && !alerts.includes('Heat Advisory')) {
+                    alerts.push('Heat Advisory');
+                }
+                if (temp < 20 && !alerts.includes('Freeze Warning')) {
+                    alerts.push('Freeze Warning');
+                }
+            });
+
+            if (alerts.length > 0) {
+                alerts.forEach(alert => {
+                    const alertBox = document.createElement('div');
+                    alertBox.className = 'alert-box';
+                    alertBox.innerHTML = `
+                        <div class="alert-title">⚠️ ${alert}</div>
+                        <div class="alert-description">Special weather conditions detected. Please take appropriate precautions.</div>
+                    `;
+                    alertsContainer.appendChild(alertBox);
+                });
+                weatherAlerts.classList.add('active');
+            }
+        }
+
+        function getWeatherIcon(weatherId) {
+            if (weatherId >= 200 && weatherId < 300) return '⛈️';
+            if (weatherId >= 300 && weatherId < 400) return '🌧️';
+            if (weatherId >= 500 && weatherId < 600) return '🌧️';
+            if (weatherId >= 600 && weatherId < 700) return '❄️';
+            if (weatherId >= 700 && weatherId < 800) return '🌫️';
+            if (weatherId === 800) return '☀️';
+            if (weatherId > 800) return '☁️';
+            return '🌡️';
+        }
+
+        function displayDailyForecast(forecastData) {
+            const dailyForecast = document.getElementById('dailyForecast');
+            
+            // Destroy existing chart if it exists
+            if (dailyChart) {
+                dailyChart.destroy();
+            }
+            
+            // Group forecast data by day
+            const dailyData = {};
+            
+            forecastData.list.forEach(period => {
+                const date = new Date(period.dt * 1000);
+                const dateKey = date.toDateString();
+                
+                if (!dailyData[dateKey]) {
+                    dailyData[dateKey] = {
+                        temps: [],
+                        weatherIds: [],
+                        descriptions: [],
+                        pops: [],
+                        date: date
+                    };
+                }
+                
+                dailyData[dateKey].temps.push(period.main.temp);
+                dailyData[dateKey].weatherIds.push(period.weather[0].id);
+                dailyData[dateKey].descriptions.push(period.weather[0].description);
+                dailyData[dateKey].pops.push(period.pop || 0);
+            });
+            
+            // Get the next 5 days (excluding today)
+            const days = Object.keys(dailyData).slice(0, 5);
+            
+            const labels = [];
+            const highTemps = [];
+            const lowTemps = [];
+            const precipitation = [];
+            const precipAccumulation = [];
+            const weatherIcons = [];
+            const weatherDescriptions = [];
+            
+            days.forEach(dayKey => {
+                const dayData = dailyData[dayKey];
+                const highTemp = Math.round(Math.max(...dayData.temps));
+                const lowTemp = Math.round(Math.min(...dayData.temps));
+                const maxPrecip = Math.round(Math.max(...dayData.pops) * 100);
+                
+                // Calculate precipitation accumulation for the day
+                let totalPrecip = 0;
+                dayData.pops.forEach((pop, index) => {
+                    if (pop > 0.3) { // If precipitation probability is high
+                        totalPrecip += pop * 2; // Estimate accumulation based on probability
+                    }
+                });
+                
+                // Get the most common weather condition for the day
+                const weatherCounts = {};
+                dayData.weatherIds.forEach(id => {
+                    weatherCounts[id] = (weatherCounts[id] || 0) + 1;
+                });
+                const dominantWeatherId = Object.keys(weatherCounts).reduce((a, b) => 
+                    weatherCounts[a] > weatherCounts[b] ? a : b
+                );
+                
+                // Get the most common description
+                const descCounts = {};
+                dayData.descriptions.forEach(desc => {
+                    descCounts[desc] = (descCounts[desc] || 0) + 1;
+                });
+                const dominantDesc = Object.keys(descCounts).reduce((a, b) => 
+                    descCounts[a] > descCounts[b] ? a : b
+                );
+                
+                const dayName = dayData.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                const icon = getWeatherIcon(parseInt(dominantWeatherId));
+                
+                labels.push(dayName);
+                highTemps.push(highTemp);
+                lowTemps.push(lowTemp);
+                precipitation.push(maxPrecip);
+                precipAccumulation.push(totalPrecip.toFixed(1));
+                weatherIcons.push(icon);
+                weatherDescriptions.push(dominantDesc);
+            });
+
+            // Calculate trend lines for high and low temperatures
+            const highTrend = calculateTrendLine(highTemps);
+            const lowTrend = calculateTrendLine(lowTemps);
+
+            const ctx = document.getElementById('dailyChart').getContext('2d');
+            
+            dailyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'High Temp (°F)',
+                            data: highTemps,
+                            backgroundColor: 'rgba(211, 47, 47, 0.7)',
+                            borderColor: '#d32f2f',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Low Temp (°F)',
+                            data: lowTemps,
+                            backgroundColor: 'rgba(25, 118, 210, 0.7)',
+                            borderColor: '#1976d2',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'High Trend',
+                            data: highTrend,
+                            borderColor: '#ff9800',
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            type: 'line',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Low Trend',
+                            data: lowTrend,
+                            borderColor: '#ff9800',
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            type: 'line',
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Precip Accumulation (mm)',
+                            data: precipAccumulation,
+                            borderColor: '#4caf50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            type: 'line',
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterBody: function(context) {
+                                    const index = context[0].dataIndex;
+                                    return [
+                                        `Weather: ${weatherIcons[index]} ${weatherDescriptions[index]}`,
+                                        `Precipitation: ${precipitation[index]}%`,
+                                        `Accumulation: ${precipAccumulation[index]}mm`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Temperature (°F)'
+                            }
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Precipitation (mm)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            }
+                        }
+                    }
+                }
+            });
+
+            dailyForecast.classList.add('active');
+        }
+
+        // Allow Enter key to trigger search
+        document.getElementById('zipcode').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                getWeather();
+            }
+        });
+
+        function initWeatherMap(lat, lon) {
+            const weatherMapSection = document.getElementById('weatherMapSection');
+            
+            if (map) {
+                map.remove();
+            }
+            
+            map = L.map('map').setView([lat, lon], 6);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            changeMapLayer('clouds_new');
+            
+            weatherMapSection.classList.add('active');
+        }
+
+        function changeMapLayer(layer) {
+            if (weatherLayer) {
+                map.removeLayer(weatherLayer);
+            }
+            
+            weatherLayer = L.tileLayer(
+                `https://tile.openweathermap.org/map/${layer}/{z}/{x}/{y}.png?appid=${API_KEY}`, {
+                opacity: 0.7
+            }).addTo(map);
+        }
+    </script>
+</body>
+</html>
