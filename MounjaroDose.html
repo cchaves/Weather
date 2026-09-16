@@ -1,0 +1,530 @@
+
+                        <!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+							<style>
+								body {
+									background-color: white; /* Ensure the iframe has a white background */
+								}
+
+								
+							</style>
+                        </head>
+                        <body>
+                            <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drug Half-Life Dashboard — 12 Weeks Dosing, 18 Weeks Washout</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+<style>
+  #dd {
+    font-family: Arial, sans-serif;
+    background: #F0F0F0;
+    color: #1D2C3B;
+    padding: 24px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  #dd * { box-sizing: border-box; }
+  #dd .hdr {
+    background: #0D2155;
+    color: #FFFFFF;
+    padding: 24px 28px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  #dd .hdr h1 { margin: 0 0 6px 0; font-size: 22px; font-weight: 700; }
+  #dd .hdr p { margin: 0; font-size: 13px; color: #C5D4E3; line-height: 1.5; }
+  #dd .fbar {
+    background: #FFFFFF;
+    border: 1px solid #D2D2D2;
+    border-radius: 8px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  #dd .fg { display: flex; align-items: center; gap: 6px; }
+  #dd .fbar label { font-size: 12px; font-weight: 700; color: #40586D; }
+  #dd .fbar select, #dd .fbar button {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    padding: 6px 12px;
+    border: 1px solid #B6B6B6;
+    border-radius: 4px;
+    background: #FFFFFF;
+    color: #1D2C3B;
+    cursor: pointer;
+  }
+  #dd .fbar button { background: #0672CB; color: #FFFFFF; border: none; font-weight: 700; }
+  #dd .fbar button:hover { background: #00468B; }
+  #dd .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  #dd .kpi {
+    background: #FFFFFF;
+    border: 1px solid #D2D2D2;
+    border-radius: 8px;
+    padding: 16px 16px;
+    text-align: center;
+  }
+  #dd .kpi .kl { font-size: 10px; color: #40586D; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+  #dd .kpi .kv { font-size: 24px; font-weight: 700; color: #0672CB; }
+  #dd .kpi .ku { font-size: 10px; color: #40586D; margin-top: 2px; }
+  #dd .charts { display: grid; grid-template-columns: 1fr; gap: 20px; }
+  #dd .card {
+    background: #FFFFFF;
+    border: 1px solid #D2D2D2;
+    border-radius: 8px;
+    padding: 20px;
+  }
+  #dd .card h3 { margin: 0 0 4px 0; font-size: 14px; color: #1D2C3B; }
+  #dd .card .cs { font-size: 11px; color: #40586D; margin-bottom: 12px; }
+  #dd .cc { position: relative; width: 100%; }
+  #dd .cc.h440 { height: 440px; }
+  #dd .cc.h360 { height: 360px; }
+  #dd .cc.h340 { height: 340px; }
+  #dd .cc.h320 { height: 320px; }
+  #dd .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 768px) { #dd .g2 { grid-template-columns: 1fr; } }
+  #dd .tw {
+    max-height: 380px; overflow-y: auto;
+    border: 1px solid #D2D2D2; border-radius: 4px;
+  }
+  #dd table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  #dd table th {
+    background: #0D2155; color: #FFFFFF;
+    padding: 8px 10px; text-align: right;
+    position: sticky; top: 0; font-weight: 700; z-index: 2;
+  }
+  #dd table th:first-child { text-align: left; }
+  #dd table td {
+    padding: 6px 10px; text-align: right;
+    border-bottom: 1px solid #F0F0F0; color: #1D2C3B;
+  }
+  #dd table td:first-child { text-align: left; color: #40586D; }
+  #dd table tr:nth-child(even) { background: #F0F0F0; }
+  #dd .ln { font-size: 11px; color: #40586D; margin-top: 10px; line-height: 1.5; }
+  #dd .dm {
+    display: inline-block; width: 8px; height: 8px;
+    background: #66278F; border-radius: 50%;
+    margin-right: 4px; vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+<div id="dd">
+  <div class="hdr">
+    <h1>Drug Accumulation & Decay Dashboard</h1>
+    <p><span id="xDose"></span> mg weekly dose × <span id="xDW"></span> weeks dosing | Half-life: 5 days | Last dose: Week <span id="xLW"></span> (Day <span id="xLD"></span>) | Washout: <span id="xWW"></span> weeks | Total: <span id="xTD"></span> days</p>
+  </div>
+
+  <div class="fbar">
+    <div class="fg">
+      <label for="fD">Dose (mg):</label>
+      <select id="fD">
+        <option value="15" selected>15 mg</option>
+        <option value="12.5">12.5 mg</option>
+        <option value="10">10 mg</option>
+        <option value="7.5">7.5 mg</option>
+        <option value="5">5 mg</option>
+        <option value="2.5">2.5 mg</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label for="fP">Phase:</label>
+      <select id="fP">
+        <option value="all">All (Dosing + Washout)</option>
+        <option value="dosing">Dosing Only (Wk 1–12)</option>
+        <option value="washout">Washout Only (Post Wk 12)</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label for="fH">Half-Life Markers:</label>
+      <select id="fH">
+        <option value="yes">Show</option>
+        <option value="no">Hide</option>
+      </select>
+    </div>
+    <button id="fR">Reset All</button>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="kl">Dose Level</div><div class="kv" id="kDose">—</div><div class="ku">mg per week</div></div>
+    <div class="kpi"><div class="kl">Dosing Weeks</div><div class="kv" id="kWks">—</div><div class="ku">weekly doses</div></div>
+    <div class="kpi"><div class="kl">Peak Accumulation</div><div class="kv" id="kPeak">—</div><div class="ku">mg (max observed)</div></div>
+    <div class="kpi"><div class="kl">Steady-State Trough</div><div class="kv" id="kSS">—</div><div class="ku">mg (pre-dose Wk 12)</div></div>
+    <div class="kpi"><div class="kl">Level at Last Dose</div><div class="kv" id="kLast">—</div><div class="ku">mg (day <span id="kLDay"></span>)</div></div>
+    <div class="kpi"><div class="kl">End of Washout</div><div class="kv" id="kEnd">—</div><div class="ku">mg (day <span id="kEDay"></span>)</div></div>
+    <div class="kpi"><div class="kl">Half-Life</div><div class="kv">5</div><div class="ku">days (50% / cycle)</div></div>
+  </div>
+
+  <div class="charts">
+    <div class="card">
+      <h3>Total Drug Level Over Time — <span id="cMainPh"></span></h3>
+      <div class="cs"><span id="cMainDW"></span>-week dosing + <span id="cMainWW"></span>-week washout. Dashed lines = dose days. Purple dots = dose administration.</div>
+      <div class="cc h440"><canvas id="c1"></canvas></div>
+      <div class="ln"><span class="dm"></span> Purple markers = dose days | Decay begins after Day <span id="cMainLD"></span></div>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <h3>Post-Dose Exponential Decay</h3>
+        <div class="cs">Drug level after last dose, projected <span id="cDecDays"></span> days. Half-life milestones annotated.</div>
+        <div class="cc h360"><canvas id="c2"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Percentage Remaining vs. Time</h3>
+        <div class="cs">Fraction remaining — 50% at 5 days, 25% at 10 days. Identical across all dose levels.</div>
+        <div class="cc h340"><canvas id="c3"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Weekly Peak & Trough Levels During Dosing</h3>
+      <div class="cs">Max and min drug levels each of <span id="cPTWk"></span> dosing weeks. Steady state approached by Wk 8–10.</div>
+      <div class="cc h320"><canvas id="c4"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h3>Dose-Level Comparison — Peak Accumulation (12-Week Dosing)</h3>
+      <div class="cs">Peak drug level at each dose across 12 weeks of weekly dosing. Linear relationship confirms first-order kinetics.</div>
+      <div class="cc h320"><canvas id="c5"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h3>Detailed Washout Data Table</h3>
+      <div class="cs">Day-by-day drug levels after the last dose, with percentage remaining and half-lives elapsed.</div>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Day</th><th>Days Post-Dose</th><th>Week Post-Dose</th><th>Drug Level (mg)</th><th>% Remaining</th><th>Half-Lives</th></tr></thead>
+          <tbody id="tB"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const HL = 5;
+  const DR = Math.pow(0.5, 1/HL);
+  const DW = 12;
+  const WW = 18;
+  const DPD = DW * 7;
+  const WPD = WW * 7;
+  const TOT = DPD + WPD;
+  const ALL_D = [15, 12.5, 10, 7.5, 5, 2.5];
+
+  const dDays = [];
+  for(let w=0; w<DW; w++) dDays.push(w*7+1);
+  const LDD = dDays[dDays.length-1];
+
+  const P = {
+    bl:'#0672CB', oc:'#00468B', mi:'#0D2155', fo:'#0B7C84',
+    te:'#044E52', pl:'#66278F', du:'#40155C', ms:'#C5D4E3',
+    ti:'#D2D2D2', rv:'#40586D', co:'#1D2C3B', qz:'#F0F0F0'
+  };
+
+  function calc(dose){
+    let act=[], out=[];
+    for(let d=1; d<=TOT; d++){
+      act = act.map(a => a * DR);
+      const isD = dDays.includes(d);
+      if(isD) act.push(dose);
+      const t = act.reduce((s,a)=>s+a, 0);
+      out.push({day:d, lv:t, isD:isD});
+    }
+    const pLv = out.find(x=>x.day===LDD).lv;
+    const wash = out.filter(x=>x.day>=LDD);
+    const ws=[];
+    for(let w=0;w<DW;w++){
+      const wd=out.filter(x=>x.day>w*7&&x.day<=(w+1)*7);
+      const lv=wd.map(x=>x.lv);
+      ws.push({wk:w+1, pk:Math.max(...lv), tr:Math.min(...lv)});
+    }
+    console.log('[Dose='+dose+'] N='+out.length+' Expected='+TOT+' PostDose='+pLv.toFixed(6)+' | Sum check: doseDays='+dDays.length+' lastDoseDay='+LDD);
+    return {daily:out, wash:wash, pLv:pLv, ws:ws};
+  }
+
+  function peakFor(d){ return Math.max(...calc(d).daily.map(x=>x.lv)); }
+
+  let ch1,ch2,ch3,ch4,ch5;
+  function kill(){[ch1,ch2,ch3,ch4,ch5].forEach(c=>{if(c)c.destroy();});ch1=ch2=ch3=ch4=ch5=null;}
+
+  function go(){
+    kill();
+    const dose = parseFloat(document.getElementById('fD').value);
+    const phase = document.getElementById('fP').value;
+    const sHL = document.getElementById('fH').value;
+    const {daily, wash, pLv, ws} = calc(dose);
+
+    // Header
+    document.getElementById('xDose').textContent = dose;
+    document.getElementById('xDW').textContent = DW;
+    document.getElementById('xLW').textContent = DW;
+    document.getElementById('xLD').textContent = LDD;
+    document.getElementById('xWW').textContent = WW;
+    document.getElementById('xTD').textContent = TOT;
+
+    // KPIs
+    const peak = Math.max(...daily.map(x=>x.lv));
+    const trPre = daily.filter(x=>x.day<LDD).pop().lv;
+    const endLv = daily[daily.length-1].lv;
+    document.getElementById('kDose').textContent = dose;
+    document.getElementById('kWks').textContent = DW;
+    document.getElementById('kPeak').textContent = peak.toFixed(2);
+    document.getElementById('kSS').textContent = trPre.toFixed(2);
+    document.getElementById('kLast').textContent = pLv.toFixed(2);
+    document.getElementById('kLDay').textContent = LDD;
+    document.getElementById('kEnd').textContent = endLv.toFixed(8);
+    document.getElementById('kEDay').textContent = TOT;
+
+    // Sub-text
+    document.getElementById('cMainDW').textContent = DW;
+    document.getElementById('cMainWW').textContent = WW;
+    document.getElementById('cMainLD').textContent = LDD;
+    document.getElementById('cMainPh').textContent = phase==='all'?'Full Timeline':phase==='dosing'?'Dosing Phase':'Washout Phase';
+    document.getElementById('cDecDays').textContent = WPD;
+    document.getElementById('cPTWk').textContent = DW;
+
+    // Table
+    const tb = document.getElementById('tB');
+    tb.innerHTML = '';
+    wash.forEach(d=>{
+      const dp = d.day - LDD;
+      const pct = d.lv / pLv * 100;
+      const hle = dp / HL;
+      const wkPost = Math.floor(dp / 7);
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td>Day '+d.day+'</td><td>'+dp+'</td><td>Wk '+wkPost+'</td><td>'+d.lv.toFixed(6)+'</td><td>'+pct.toFixed(4)+'%</td><td>'+hle.toFixed(2)+'</td>';
+      tb.appendChild(tr);
+    });
+
+    // Chart 1: Main timeline
+    let fd = daily;
+    if(phase==='dosing') fd = daily.filter(x=>x.day<=DPD);
+    else if(phase==='washout') fd = daily.filter(x=>x.day>=LDD);
+
+    const m1L = fd.map(x=>x.day);
+    const m1V = fd.map(x=>x.lv);
+    const m1D = fd.map(x=>x.isD?x.lv:null);
+    const m1A = {};
+
+    if(phase!=='washout'){
+      dDays.forEach((dd,i)=>{
+        if(fd.some(x=>x.day===dd)){
+          m1A['d'+i]={type:'line',xMin:dd,xMax:dd,borderColor:P.pl,borderWidth:1,borderDash:[3,3]};
+        }
+      });
+    }
+    if(phase!=='dosing'&&fd.some(x=>x.day===LDD)){
+      m1A['ld']={type:'line',xMin:LDD,xMax:LDD,borderColor:P.ms,borderWidth:2,borderDash:[6,3],
+        label:{display:true,content:'Last Dose (Day '+LDD+')',font:{size:11,family:'Arial'},color:P.co,position:'start'}};
+    }
+    if(sHL==='yes'&&phase!=='dosing'){
+      for(let n=1;n<=8;n++){
+        const hd=LDD+n*HL;
+        const e=fd.find(x=>x.day===hd);
+        if(e){
+          m1A['h'+n]={type:'point',xValue:hd,yValue:e.lv,radius:5,
+            backgroundColor:P.fo,borderColor:P.te,borderWidth:2,
+            label:{display:n<=4,content:n+' HL',font:{size:10,family:'Arial'},color:P.te,position:'end'}};
+        }
+      }
+    }
+
+    ch1 = new Chart(document.getElementById('c1'),{
+      type:'line',
+      data:{labels:m1L,datasets:[
+        {label:'Drug Level (mg)',data:m1V,borderColor:P.bl,backgroundColor:'rgba(6,114,203,0.08)',
+         fill:true,tension:0.3,pointRadius:0.8,pointHoverRadius:4,borderWidth:2.5},
+        {label:'Dose Day',data:m1D,borderColor:'transparent',backgroundColor:P.pl,
+         pointRadius:5,pointStyle:'circle',showLine:false,pointHoverRadius:7}
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{labels:{font:{size:12,family:'Arial'},boxWidth:10,boxHeight:10,color:P.co}},
+          tooltip:{titleFont:{size:12,family:'Arial'},bodyFont:{size:12,family:'Arial'},
+            callbacks:{
+              title:i=>'Day '+i[0].label,
+              label:i=>{
+                if(i.datasetIndex===0) return 'Level: '+i.raw.toFixed(4)+' mg';
+                if(i.raw!==null) return '💊 '+dose+' mg dose';
+                return '';
+              }
+            }
+          },
+          annotation:{annotations:m1A}
+        },
+        scales:{
+          x:{title:{display:true,text:'Day',font:{size:13,family:'Arial'},color:P.co},
+             ticks:{font:{size:11,family:'Arial'},color:P.rv,maxTicksLimit:22},grid:{color:P.qz}},
+          y:{title:{display:true,text:'Drug Level (mg)',font:{size:13,family:'Arial'},color:P.co},
+             ticks:{font:{size:11,family:'Arial'},color:P.rv,maxTicksLimit:8},grid:{color:P.qz},beginAtZero:true}
+        }
+      }
+    });
+
+    // Chart 2: Decay
+    const d2L = wash.map(x=>x.day-LDD);
+    const d2V = wash.map(x=>x.lv);
+    const d2A = {};
+    if(sHL==='yes'){
+      [{n:1,p:'50%'},{n:2,p:'25%'},{n:3,p:'12.5%'},{n:4,p:'6.25%'},{n:5,p:'3.13%'}].forEach(h=>{
+        const di=h.n*HL;
+        const e=wash.find(x=>(x.day-LDD)===di);
+        if(e){
+          d2A['l'+h.n]={type:'line',xMin:di,xMax:di,borderColor:P.fo,borderWidth:1.5,borderDash:[5,3],
+            label:{display:true,content:h.p+' @ '+di+'d',font:{size:10,family:'Arial'},color:P.te,position:'start',backgroundColor:'rgba(255,255,255,0.85)'}};
+          d2A['p'+h.n]={type:'point',xValue:di,yValue:e.lv,radius:5,backgroundColor:P.fo,borderColor:P.te,borderWidth:2};
+        }
+      });
+    }
+
+    ch2 = new Chart(document.getElementById('c2'),{
+      type:'line',
+      data:{labels:d2L,datasets:[{label:'Drug Level (mg)',data:d2V,borderColor:P.oc,
+        backgroundColor:'rgba(0,70,139,0.07)',fill:true,tension:0.35,pointRadius:1,pointHoverRadius:4,borderWidth:2.5}]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{labels:{font:{size:12,family:'Arial'},boxWidth:10,boxHeight:10,color:P.co}},
+          tooltip:{titleFont:{size:12,family:'Arial'},bodyFont:{size:12,family:'Arial'},
+            callbacks:{
+              title:i=>i[0].label+' days post-dose',
+              label:i=>i.raw.toFixed(6)+' mg ('+(i.raw/pLv*100).toFixed(3)+'%)'
+            }
+          },
+          annotation:{annotations:d2A}
+        },
+        scales:{
+          x:{title:{display:true,text:'Days After Last Dose',font:{size:13,family:'Arial'},color:P.co},
+             ticks:{font:{size:11,family:'Arial'},color:P.rv,maxTicksLimit:14},grid:{color:P.qz}},
+          y:{title:{display:true,text:'Drug Level (mg)',font:{size:13,family:'Arial'},color:P.co},
+             ticks:{font:{size:11,family:'Arial'},color:P.rv,maxTicksLimit:7},grid:{color:P.qz},beginAtZero:true}
+        }
+      }
+    });
+
+    // Chart 3: Percentage remaining
+    const p3L = wash.map(x=>x.day-LDD);
+    const p3A = wash.map(x=>x.lv/pLv*100);
+    const p3T = p3L.map(d=>100*Math.pow(0.5,d/HL));
+
+    ch3 = new Chart(document.getElementById('c3'),{
+      type:'line',
+      data:{labels:p3L,datasets:[
+        {label:'Actual % Remaining',data:p3A,borderColor:P.bl,pointRadius:1,pointHoverRadius:4,borderWidth:2.5,tension:0.3},
+        {label:'Theoretical Single-Dose',data:p3T,borderColor:P.ti,borderDash:[6,4],pointRadius:0,borderWidth:2,tension:0.3}
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{labels:{font:{size:12,family:'Arial'},boxWidth:10,boxHeight:10,color:P.co}},
+          tooltip:{titleFont:{size:12,family:'Arial'},bodyFont:{size:12,family:'Arial'},
+            callbacks:{
+              title:i=>i[0].label+' days post-dose',
+              label:i=>i.dataset.label+': '+i.raw.toFixed(3)+'%'
+            }
+          },
+          annotation:{annotations:{
+            f50:{type:'line',yMin:50,yMax:50,borderColor:P.fo,borderWidth:1.5,borderDash:[4,4],
+              label:{display:true,content:'50% (1 HL = 5 days)',font:{size:10,family:'Arial'},color:P.te,position:'end',backgroundColor:'rgba(255,255,255,0.85)'}},
+            f25:{type:'line',yMin:25,yMax:25,borderColor:P.pl,borderWidth:1.5,borderDash:[4,4],
+              label:{display:true,content:'25% (2 HL = 10 days)',font:{size:10,family:'Arial'},color:P.du,position:'end',backgroundColor:'rgba(255,255,255,0.85)'}},
+            f12:{type:'line',yMin:12.5,yMax:12.5,borderColor:P.oc,borderWidth:1,borderDash:[4,4],
+              label:{display:true,content:'12.5% (3 HL = 15 days)',font:{size:10,family:'Arial'},color:P.oc,position:'end',backgroundColor:'rgba(255,255,255,0.85)'}}
+          }}
+        },
+        scales:{
+          x:{title:{display:true,text:'Days After Last Dose',font:{size:13,family:'Arial'},color:P.co},
+             ticks:{font:{size:11,family:'Arial'},color:P.rv,maxTicksLimit:14},grid:{color:P.qz}},
+          y:{title:{display:true,text:'% Remaining',font:{size:13,family:'Arial'},color:P.co},
+             ticks:{font:{size:11,family:'Arial'},color:P.rv,maxTicksLimit:7},grid:{color:P.qz},min:0,max:110}
+        }
+      }
+    });
+
+    // Chart 4: Peak/Trough
+    ch4 = new Chart(document.getElementById('c4'),{
+      type:'bar',
+      data:{labels:ws.map(w=>'Wk '+w.wk),datasets:[
+        {label:'Peak (mg)',data:ws.map(w=>w.pk),backgroundColor:P.bl,borderRadius:4,barThickness:24},
+        {label:'Trough (mg)',data:ws.map(w=>w.tr),backgroundColor:P.ms,borderRadius:4,barThickness:24}
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{labels:{font:{size:12,family:'Arial'},boxWidth:10,boxHeight:10,color:P.co}},
+          tooltip:{titleFont:{size:12,family:'Arial'},bodyFont:{size:12,family:'Arial'},
+            callbacks:{label:i=>i.dataset.label+': '+i.raw.toFixed(3)+' mg'}}
+        },
+        scales:{
+          x:{ticks:{font:{size:11,family:'Arial'},color:P.rv},grid:{display:false}},
+          y:{title:{display:true,text:'Drug Level (mg)',font:{size:13,family:'Arial'},color:P.co},
+             ticks:{font:{size:11,family:'Arial'},color:P.rv,maxTicksLimit:7},grid:{color:P.qz},beginAtZero:true}
+        }
+      }
+    });
+
+    // Chart 5: Dose comparison
+    const cColors = [P.bl, P.oc, P.fo, P.te, P.pl, P.du];
+    const cPeaks = ALL_D.map(d=>peakFor(d));
+
+    ch5 = new Chart(document.getElementById('c5'),{
+      type:'bar',
+      data:{labels:ALL_D.map(d=>d+' mg'),datasets:[
+        {label:'Peak Level (mg)',data:cPeaks,backgroundColor:cColors,borderRadius:4,barThickness:36}
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{labels:{font:{size:12,family:'Arial'},boxWidth:10,boxHeight:10,color:P.co}},
+          tooltip:{titleFont:{size:12,family:'Arial'},bodyFont:{size:12,family:'Arial'},
+            callbacks:{label:i=>i.raw.toFixed(3)+' mg peak over 12 weeks'}}
+        },
+        scales:{
+          x:{ticks:{font:{size:11,family:'Arial'},color:P.rv},grid:{display:false}},
+          y:{title:{display:true,text:'Peak Drug Level (mg)',font:{size:13,family:'Arial'},color:P.co},
+             ticks:{font:{size:11,family:'Arial'},color:P.rv,maxTicksLimit:7},grid:{color:P.qz},beginAtZero:true}
+        }
+      }
+    });
+  }
+
+  go();
+
+  document.getElementById('fD').addEventListener('change', go);
+  document.getElementById('fP').addEventListener('change', go);
+  document.getElementById('fH').addEventListener('change', go);
+  document.getElementById('fR').addEventListener('click', function(){
+    document.getElementById('fD').value='15';
+    document.getElementById('fP').value='all';
+    document.getElementById('fH').value='yes';
+    go();
+  });
+})();
+</script>
+</div>
+</body>
+</html>
+
+							<script>
+                            	
+							</script>
+                        </body>
+                        </html>
+                    
