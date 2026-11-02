@@ -1,24 +1,71 @@
+<?php
+/* --------------------------------------------------------------
+   Carlos Projects – Auto‑generated file list
+   --------------------------------------------------------------
+   This script:
+   1. Scans the $baseDir directory.
+   2. Filters out hidden files (names starting with a dot) and
+      the script itself.
+   3. Sorts the entries alphabetically.
+   4. Emits a clean HTML page with clickable links.
+   -------------------------------------------------------------- */
+
+$baseDir   = __DIR__ . '/';      // <-- change if your folder lives elsewhere
+$baseUrl   = '/';                // URL path that matches $baseDir
+$ignore    = ['index.php', '.htaccess']; // files you never want to expose
+
+// Helper: safely escape a string for HTML output
+function h($string) {
+    return htmlspecialchars($string, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+// Gather the list of files
+$files = [];
+if (is_dir($baseDir) && $dh = opendir($baseDir)) {
+    while (($file = readdir($dh)) !== false) {
+        // Skip . , .. , hidden files, and anything in $ignore
+        if ($file[0] === '.' || in_array($file, $ignore, true)) {
+            continue;
+        }
+        $fullPath = $baseDir . '/' . $file;
+        // Only regular files (skip sub‑folders – add extra logic if you need recursion)
+        if (is_file($fullPath)) {
+            $files[] = $file;
+        }
+    }
+    closedir($dh);
+    sort($files, SORT_NATURAL | SORT_FLAG_CASE);
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>File Index</title>
+    <title>Carlos Projects</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
-        .file-list { list-style: none; padding: 0; }
-        .file-item { padding: 10px; margin: 5px 0; background: #f5f5f5; border-radius: 4px; }
-        .file-item a { text-decoration: none; color: #0066cc; font-weight: bold; }
-        .file-item a:hover { text-decoration: underline; }
+        body   { font-family: Arial, Helvetica, sans-serif; margin: 2rem; }
+        h1     { color: #333; }
+        ul     { list-style: none; padding: 0; }
+        li a   { text-decoration: none; color: #0066cc; }
+        li a:hover { text-decoration: underline; }
+        .empty { color: #777; font-style: italic; }
     </style>
 </head>
 <body>
-    <h1>Available Files</h1>
-    <ul class="file-list">
-        <li class="file-item"><a href="weather-app.html">📄 weather-app.html</a></li>
-        <li class="file-item"><a href="cat-game.html">📄 cat-game.html</a></li>
-        <li class="file-item"><a href="MounjaroDose.html"> MounjaroDose.html</a></li>
-        <li class="file-item"><a href="polaroid_camera.py"> polaroid_camera.py</a></li>
-        <!-- Add more files manually as needed -->
-    </ul>
+    <h1>Carlos Projects</h1>
+
+    <?php if (empty($files)): ?>
+        <p class="empty">No files found in the projects folder.</p>
+    <?php else: ?>
+        <ul>
+            <?php foreach ($files as $file): ?>
+                <li>
+                    <a href="<?= h($baseUrl . $file); ?>" target="_blank">
+                        <?= h($file); ?>
+                    </a>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
 </body>
 </html>
