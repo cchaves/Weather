@@ -40,14 +40,6 @@
           const name = link.textContent.trim();
 
           // Exclude parent directory links and self
-          if (href && href !== '../' && href !== './' && href !== 'index.html') {
-            const li = document.createElement('li');
-            const a = document.createElement('a');
-            a.href = href;
-            a.textContent = name;
-            li.appendChild(a);
-            listElement.appendChild(li);
-          }
         });
 
         if (listElement.children.length === 0) {
