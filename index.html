@@ -1,71 +1,67 @@
-<?php
-/* --------------------------------------------------------------
-   Carlos Projects – Auto‑generated file list
-   --------------------------------------------------------------
-   This script:
-   1. Scans the $baseDir directory.
-   2. Filters out hidden files (names starting with a dot) and
-      the script itself.
-   3. Sorts the entries alphabetically.
-   4. Emits a clean HTML page with clickable links.
-   -------------------------------------------------------------- */
-
-$baseDir   = __DIR__ . '/Weather';      // <-- change if your folder lives elsewhere
-$baseUrl   = 'Weather/';                // URL path that matches $baseDir
-$ignore    = ['index.php', '.htaccess']; // files you never want to expose
-
-// Helper: safely escape a string for HTML output
-function h($string) {
-    return htmlspecialchars($string, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
-
-// Gather the list of files
-$files = [];
-if (is_dir($baseDir) && $dh = opendir($baseDir)) {
-    while (($file = readdir($dh)) !== false) {
-        // Skip . , .. , hidden files, and anything in $ignore
-        if ($file[0] === '.' || in_array($file, $ignore, true)) {
-            continue;
-        }
-        $fullPath = $baseDir . '/' . $file;
-        // Only regular files (skip sub‑folders – add extra logic if you need recursion)
-        if (is_file($fullPath)) {
-            $files[] = $file;
-        }
-    }
-    closedir($dh);
-    sort($files, SORT_NATURAL | SORT_FLAG_CASE);
-}
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Carlos Projects</title>
-    <style>
-        body   { font-family: Arial, Helvetica, sans-serif; margin: 2rem; }
-        h1     { color: #333; }
-        ul     { list-style: none; padding: 0; }
-        li a   { text-decoration: none; color: #0066cc; }
-        li a:hover { text-decoration: underline; }
-        .empty { color: #777; font-style: italic; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Directory File Listing</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+    }
+    ul {
+      line-height: 1.6;
+    }
+  </style>
 </head>
 <body>
-    <h1>Carlos Projects</h1>
 
-    <?php if (empty($files)): ?>
-        <p class="empty">No files found in the projects folder.</p>
-    <?php else: ?>
-        <ul>
-            <?php foreach ($files as $file): ?>
-                <li>
-                    <a href="<?= h($baseUrl . $file); ?>" target="_blank">
-                        <?= h($file); ?>
-                    </a>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
+  <h2>Files in Current Directory</h2>
+  <ul id="files">Loading files...</ul>
+
+  <script>
+    async function loadDirectory() {
+      const listElement = document.getElementById('files');
+
+      try {
+        // Fetch the directory root from the web server
+        const response = await fetch('.');
+        const htmlText = await response.text();
+
+        // Parse the returned HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, 'text/html');
+
+        // Extract all anchor links
+        const links = Array.from(doc.querySelectorAll('a'));
+        listElement.innerHTML = '';
+
+        links.forEach(link => {
+          const href = link.getAttribute('href');
+          const name = link.textContent.trim();
+
+          // Exclude parent directory links and self
+          if (href && href !== '../' && href !== './' && href !== 'index.html') {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = href;
+            a.textContent = name;
+            li.appendChild(a);
+            listElement.appendChild(li);
+          }
+        });
+
+        if (listElement.children.length === 0) {
+          listElement.innerHTML = '<li>No files found or directory indexing is disabled on the server.</li>';
+        }
+
+      } catch (error) {
+        listElement.innerHTML = '<li>Error loading directory listing. Ensure you are running on a web server with directory listing enabled.</li>';
+        console.error(error);
+      }
+    }
+
+    loadDirectory();
+  </script>
+
 </body>
 </html>
