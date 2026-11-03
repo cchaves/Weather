@@ -1,59 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Directory File Listing</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 2rem;
-    }
-    ul {
-      line-height: 1.6;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Lister</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .file-list {
+            margin-top: 20px;
+        }
+        .file-item {
+            padding: 10px;
+            background: #f5f5f5;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 <body>
+    <h1>File Lister</h1>
+    <p>Select files to display their information:</p>
+    
+    <input type="file" id="fileInput" multiple webkitdirectory directory>
+    
+    <div class="file-list" id="fileList"></div>
 
-  <h1>Carlos Files</h2>
-  <ul id="files">Loading files...</ul>
-
-  <script>
-    async function loadDirectory() {
-      const listElement = document.getElementById('files');
-
-      try {
-        // Fetch the directory root from the web server
-        const response = await fetch('.');
-        const htmlText = await response.text();
-
-        // Parse the returned HTML
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlText, 'text/html');
-
-        // Extract all anchor links
-        const links = Array.from(doc.querySelectorAll('a'));
-        listElement.innerHTML = '';
-
-        links.forEach(link => {
-          const href = link.getAttribute('href');
-          const name = link.textContent.trim();
-
-          // Exclude parent directory links and self
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const files = e.target.files;
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <strong>${file.name}</strong><br>
+                    Size: ${formatFileSize(file.size)}<br>
+                    Type: ${file.type || 'Unknown'}<br>
+                    Last Modified: ${new Date(file.lastModified).toLocaleString()}
+                `;
+                fileList.appendChild(fileItem);
+            }
         });
 
-        if (listElement.children.length === 0) {
-          listElement.innerHTML = '<li>No files found or directory indexing is disabled on the server.</li>';
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
         }
-
-      } catch (error) {
-        listElement.innerHTML = '<li>Error loading directory listing. Ensure you are running on a web server with directory listing enabled.</li>';
-        console.error(error);
-      }
-    }
-
-    loadDirectory();
-  </script>
-
+    </script>
 </body>
 </html>
